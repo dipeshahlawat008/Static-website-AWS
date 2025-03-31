@@ -1,0 +1,207 @@
+>>> **Setup the Development Repository**
+git init
+git remote add origin <your-github-repo-url>
+git add .
+git commit -m "Initial Commit"
+git push -u origin main
+
+
+>>> **Setup AWS EC2 Instance**
+Launch an EC2 instance (Amazon Linux or Ubuntu)
+
+Install required dependencies:
+sh
+CopySetup Docker
+Install Docker on your EC2 instance (already installed above).
+
+** Write a Dockerfile:
+
+dockerfile
+Copy
+Edit
+FROM nginx:alpine
+COPY . /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+Build and run the Docker container:
+
+sh
+Copy
+Edit
+docker build -t my-static-site .
+docker run -d -p 80:80 my-static-site
+Edit
+sudo yum update -y   # For Amazon Linux
+sudo yum install docker git -y
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker ec2-user
+
+>> Setup Docker
+Install Docker on your EC2 instance (already installed above).
+
+Write a Dockerfile:
+
+dockerfile
+Copy
+Edit
+FROM nginx:alpine
+COPY . /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+Build and run the Docker container:
+
+sh
+Copy
+Edit
+docker build -t my-static-site .
+docker run -d -p 80:80 my-static-site
+
+>>> ** Setup Jenkins for CI/CD
+  
+sudo yum install java-11-openjdk -y
+
+Install Jenkins:
+
+sh
+Copy
+Edit
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+  https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+sudo yum install jenkins -y
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+Access Jenkins at:
+
+cpp
+Copy
+Edit
+http://<EC2-Public-IP>:8080
+Install required Jenkins Plugins:
+
+1.Docker Pipeline
+2.GitHub Integration
+3.Kubernetes
+
+*** Configure Jenkins Pipeline:
+
+Create a Jenkinsfile in your repository:
+***
+groovy
+Copy
+Edit
+pipeline {
+  agent any
+  stages {
+    stage('Clone Repository') {
+      steps {
+        git 'https://github.com/your-repo.git'
+      }
+    }
+    stage('Build Docker Image') {
+      steps {
+        sh 'docker build -t my-static-site .'
+      }
+    }
+    stage('Run Docker Container') {
+      steps {
+        sh 'docker run -d -p 80:80 my-static-site'
+      }
+    }
+  }
+}
+***
+
+Deploy Using Kubernetes >>>
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+  ****
+  Create a Deployment YAML (deployment.yaml):
+
+yaml
+Copy
+Edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: static-site
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: static-site
+  template:
+    metadata:
+      labels:
+        app: static-site
+    spec:
+      containers:
+      - name: static-site
+        image: my-static-site
+        ports:
+        - containerPort: 80
+
+>> Apply the deployment:
+
+sh
+Copy
+Edit
+kubectl apply -f deployment.yaml
+
+
+  Create a Service for External Access (service.yaml):
+
+{{{
+yaml
+Copy
+Edit
+apiVersion: v1
+kind: Service
+metadata:
+  name: static-site-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: static-site
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+}}}
+
+*** Deploy the service:
+
+sh
+Copy
+Edit
+kubectl apply -f service.yaml
+***
+Automate Deployment with Jenkins
+Modify your Jenkinsfile to:
+
+>>> Build the Docker image.
+
+>>> Push it to Docker Hub.
+
+>>> Deploy it on Kubernetes.
+
+*** Validate and Monitor
+>>> Check running pods:
+{
+sh
+Copy
+Edit
+kubectl get pods
+Get service details:
+
+sh
+Copy
+Edit
+kubectl get svc
+}
+
+**Your static website is deployed on AWS EC2 inside a Docker container, managed via Jenkins, and scalable with Kubernetes.**
